@@ -60,12 +60,12 @@ export default function App() {
   const [bisectionResults, setBisectionResults] = useState<BisectionResult[]>([]);
   const [fixedPointResults, setFixedPointResults] = useState<FixedPointResult[]>([]);
   const [bisectionSummary, setBisectionSummary] = useState<MethodSummary>({
-    equation: 'x^3 + x^2 - 3*x - 3',
+    equation: '',
     root: 0,
     executionTime: 0
   });
   const [fixedPointSummary, setFixedPointSummary] = useState<MethodSummary>({
-    equation: 'x^3 + x^2 - 3*x - 3',
+    equation: '',
     root: 0,
     executionTime: 0
   });
@@ -78,16 +78,33 @@ export default function App() {
     setBisectionSummary({ equation, root: finalRoot, executionTime });
   };
 
+  const clearBisectionResults = () => {
+    setBisectionResults([]);
+    setBisectionSummary({ equation: '', root: 0, executionTime: 0 });
+  };
+
   const handleFixedPointResults = (results: FixedPointResult[], finalRoot: number, executionTime: number, equation: string) => {
     setFixedPointResults(results);
     setFixedPointSummary({ equation, root: finalRoot, executionTime });
+  };
+
+  const clearFixedPointResults = () => {
+    setFixedPointResults([]);
+    setFixedPointSummary({ equation: '', root: 0, executionTime: 0 });
   };
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#f5f5f5' }}>
-        <AppBar position="static" elevation={2}>
+        <AppBar
+          position="sticky"
+          elevation={2}
+          sx={{
+            top: 0,
+            zIndex: (muiTheme) => muiTheme.zIndex.drawer + 1
+          }}
+        >
           <Toolbar>
             <Typography variant="h5" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
               Pencari Akar Persamaan Non-Linier
@@ -96,39 +113,48 @@ export default function App() {
               Metode Numerik
             </Typography>
           </Toolbar>
+          <Box sx={{ bgcolor: 'background.paper', borderTop: 1, borderColor: 'rgba(255, 255, 255, 0.18)' }}>
+            <Container maxWidth="xl" disableGutters>
+              <Tabs
+                value={activeTab}
+                onChange={handleTabChange}
+                centered
+                variant="fullWidth"
+                textColor="primary"
+                indicatorColor="primary"
+                sx={{
+                  minHeight: 52,
+                  '& .MuiTabs-indicator': {
+                    height: 3,
+                  },
+                  '& .MuiTab-root': {
+                    minHeight: 52,
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    px: { xs: 1, sm: 4 },
+                  }
+                }}
+              >
+                <Tab label="Metode Bisection" value="bisection" />
+                <Tab label="Metode Fixed Point Iteration" value="fixedpoint" />
+              </Tabs>
+            </Container>
+          </Box>
         </AppBar>
 
         <Container maxWidth="xl" sx={{ mt: 4, mb: 4, flex: 1 }}>
-          <Paper elevation={0} sx={{ mb: 3 }}>
-            <Tabs
-              value={activeTab}
-              onChange={handleTabChange}
-              centered
-              sx={{
-                '& .MuiTabs-indicator': {
-                  height: 3,
-                }
-              }}
-            >
-              <Tab
-                label="Metode Bisection"
-                value="bisection"
-                sx={{ fontSize: '1rem', fontWeight: 500, px: 4 }}
-              />
-              <Tab
-                label="Metode Fixed Point Iteration"
-                value="fixedpoint"
-                sx={{ fontSize: '1rem', fontWeight: 500, px: 4 }}
-              />
-            </Tabs>
-          </Paper>
-
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '400px 1fr' }, gap: 3, mb: 3 }}>
             <Box>
               {activeTab === 'bisection' ? (
-                <BisectionMethod onResults={handleBisectionResults} />
+                <BisectionMethod
+                  onResults={handleBisectionResults}
+                  onClearResults={clearBisectionResults}
+                />
               ) : (
-                <FixedPointMethod onResults={handleFixedPointResults} />
+                <FixedPointMethod
+                  onResults={handleFixedPointResults}
+                  onClearResults={clearFixedPointResults}
+                />
               )}
             </Box>
 

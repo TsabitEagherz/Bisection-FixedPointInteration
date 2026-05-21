@@ -12,16 +12,23 @@ interface FixedPointResult {
 
 interface FixedPointMethodProps {
   onResults: (results: FixedPointResult[], finalRoot: number, executionTime: number, equation: string) => void;
+  onClearResults: () => void;
 }
 
-export function FixedPointMethod({ onResults }: FixedPointMethodProps) {
-  const [equation, setEquation] = useState('x^3 + x^2 - 3*x - 3');
-  const [gEquation, setGEquation] = useState('(3*x + 3 - x^3)^0.5');
-  const [x0, setX0] = useState('2');
-  const [tolerance, setTolerance] = useState('0.001');
+export function FixedPointMethod({ onResults, onClearResults }: FixedPointMethodProps) {
+  const [equation, setEquation] = useState('');
+  const [gEquation, setGEquation] = useState('');
+  const [x0, setX0] = useState('');
+  const [tolerance, setTolerance] = useState('');
   const [maxIterations] = useState(50);
   const [error, setError] = useState<string>('');
   const [computing, setComputing] = useState(false);
+
+  const handleInputChange = (setter: (value: string) => void, value: string) => {
+    setter(value);
+    setError('');
+    onClearResults();
+  };
 
   const evaluateFunction = (expr: string, xValue: number): number => {
     try {
@@ -43,9 +50,19 @@ export function FixedPointMethod({ onResults }: FixedPointMethodProps) {
 
     try {
       const startTime = performance.now();
+      const trimmedEquation = equation.trim();
+      const trimmedGEquation = gEquation.trim();
 
       const tol = parseFloat(tolerance);
       let x = parseFloat(x0);
+
+      if (!trimmedEquation) {
+        throw new Error('Persamaan f(x) wajib diisi');
+      }
+
+      if (!trimmedGEquation) {
+        throw new Error('Fungsi iterasi g(x) wajib diisi');
+      }
 
       if (isNaN(x) || isNaN(tol)) {
         throw new Error('Input harus berupa angka valid');
@@ -55,7 +72,7 @@ export function FixedPointMethod({ onResults }: FixedPointMethodProps) {
         throw new Error('Toleransi harus lebih besar dari 0');
       }
 
-      evaluateFunction(equation, x);
+      evaluateFunction(trimmedEquation, x);
 
       const results: FixedPointResult[] = [];
       let iteration = 0;
@@ -66,7 +83,7 @@ export function FixedPointMethod({ onResults }: FixedPointMethodProps) {
         iteration++;
 
         try {
-          xNew = evaluateFunction(gEquation, x);
+          xNew = evaluateFunction(trimmedGEquation, x);
         } catch {
           throw new Error('Fungsi g(x) tidak valid atau menghasilkan nilai kompleks');
         }
@@ -98,9 +115,9 @@ export function FixedPointMethod({ onResults }: FixedPointMethodProps) {
       const endTime = performance.now();
       const executionTime = endTime - startTime;
 
-      evaluateFunction(equation, xNew);
+      evaluateFunction(trimmedEquation, xNew);
 
-      onResults(results, xNew, executionTime, equation);
+      onResults(results, xNew, executionTime, trimmedEquation);
       setComputing(false);
     } catch (err: any) {
       setError(err.message || 'Terjadi kesalahan dalam perhitungan');
@@ -125,8 +142,9 @@ export function FixedPointMethod({ onResults }: FixedPointMethodProps) {
         <TextField
           label="Persamaan f(x) = 0"
           value={equation}
-          onChange={(e) => setEquation(e.target.value)}
+          onChange={(e) => handleInputChange(setEquation, e.target.value)}
           fullWidth
+          placeholder="x^3 + x^2 - 3*x - 3"
           helperText="Contoh: x^3 + x^2 - 3*x - 3"
           variant="outlined"
         />
@@ -134,17 +152,19 @@ export function FixedPointMethod({ onResults }: FixedPointMethodProps) {
         <TextField
           label="Fungsi Iterasi g(x)"
           value={gEquation}
-          onChange={(e) => setGEquation(e.target.value)}
+          onChange={(e) => handleInputChange(setGEquation, e.target.value)}
           fullWidth
-          helperText="Ubah f(x)=0 menjadi x=g(x). Contoh: (3*x + 3 - x^3)^0.5"
+          placeholder="(3*x + 3 - x^2)^(1/3)"
+          helperText="Ubah f(x)=0 menjadi x=g(x). Contoh konvergen: (3*x + 3 - x^2)^(1/3)"
           variant="outlined"
         />
 
         <TextField
           label="x0 (Taksiran Awal)"
           value={x0}
-          onChange={(e) => setX0(e.target.value)}
+          onChange={(e) => handleInputChange(setX0, e.target.value)}
           type="number"
+          placeholder="2"
           variant="outlined"
           helperText="Nilai awal untuk iterasi"
         />
@@ -152,8 +172,9 @@ export function FixedPointMethod({ onResults }: FixedPointMethodProps) {
         <TextField
           label="Toleransi (epsilon)"
           value={tolerance}
-          onChange={(e) => setTolerance(e.target.value)}
+          onChange={(e) => handleInputChange(setTolerance, e.target.value)}
           type="number"
+          placeholder="0.001"
           inputProps={{ step: 0.001 }}
           variant="outlined"
           helperText="Nilai kesalahan yang dapat diterima"

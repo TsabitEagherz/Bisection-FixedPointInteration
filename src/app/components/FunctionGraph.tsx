@@ -1,5 +1,5 @@
 import { Paper, Typography, Box } from '@mui/material';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Scatter, ScatterChart, ZAxis } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { evaluate } from 'mathjs';
 
 interface BisectionResult {
@@ -35,6 +35,20 @@ export function FunctionGraph({
   fixedPointResults,
   finalRoot
 }: FunctionGraphProps) {
+  const evaluateNumeric = (xValue: number): number | null => {
+    try {
+      const value = evaluate(equation, { x: xValue });
+
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
+        return null;
+      }
+
+      return value;
+    } catch {
+      return null;
+    }
+  };
+
   const generateGraphData = () => {
     try {
       let xMin = -5;
@@ -55,13 +69,10 @@ export function FunctionGraph({
       const step = (xMax - xMin) / 100;
 
       for (let x = xMin; x <= xMax; x += step) {
-        try {
-          const y = evaluate(equation, { x });
-          if (isFinite(y) && Math.abs(y) < 1000) {
-            data.push({ x: parseFloat(x.toFixed(4)), y: parseFloat(y.toFixed(4)) });
-          }
-        } catch {
-          // Skip invalid points
+        const y = evaluateNumeric(x);
+
+        if (y !== null && Math.abs(y) < 1000) {
+          data.push({ x: parseFloat(x.toFixed(4)), y: parseFloat(y.toFixed(4)) });
         }
       }
 
@@ -80,16 +91,13 @@ export function FunctionGraph({
       }));
     } else if (method === 'fixedpoint' && fixedPointResults) {
       return fixedPointResults.map(r => {
-        try {
-          const y = evaluate(equation, { x: r.gx });
-          return {
-            x: r.gx,
-            y: isFinite(y) ? y : 0,
-            iteration: r.iteration
-          };
-        } catch {
-          return { x: r.gx, y: 0, iteration: r.iteration };
-        }
+        const y = evaluateNumeric(r.gx);
+
+        return {
+          x: r.gx,
+          y: y ?? 0,
+          iteration: r.iteration
+        };
       });
     }
     return [];

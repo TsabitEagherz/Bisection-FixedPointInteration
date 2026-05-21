@@ -16,16 +16,23 @@ interface BisectionResult {
 
 interface BisectionMethodProps {
   onResults: (results: BisectionResult[], finalRoot: number, executionTime: number, equation: string) => void;
+  onClearResults: () => void;
 }
 
-export function BisectionMethod({ onResults }: BisectionMethodProps) {
-  const [equation, setEquation] = useState('x^3 + x^2 - 3*x - 3');
-  const [x1, setX1] = useState('1');
-  const [x2, setX2] = useState('2');
-  const [tolerance, setTolerance] = useState('0.001');
+export function BisectionMethod({ onResults, onClearResults }: BisectionMethodProps) {
+  const [equation, setEquation] = useState('');
+  const [x1, setX1] = useState('');
+  const [x2, setX2] = useState('');
+  const [tolerance, setTolerance] = useState('');
   const [maxIterations] = useState(50);
   const [error, setError] = useState<string>('');
   const [computing, setComputing] = useState(false);
+
+  const handleInputChange = (setter: (value: string) => void, value: string) => {
+    setter(value);
+    setError('');
+    onClearResults();
+  };
 
   const evaluateFunction = (expr: string, xValue: number): number => {
     try {
@@ -47,10 +54,15 @@ export function BisectionMethod({ onResults }: BisectionMethodProps) {
 
     try {
       const startTime = performance.now();
+      const trimmedEquation = equation.trim();
 
       const tol = parseFloat(tolerance);
       let a = parseFloat(x1);
       let b = parseFloat(x2);
+
+      if (!trimmedEquation) {
+        throw new Error('Persamaan f(x) wajib diisi');
+      }
 
       if (isNaN(a) || isNaN(b) || isNaN(tol)) {
         throw new Error('Input harus berupa angka valid');
@@ -73,8 +85,8 @@ export function BisectionMethod({ onResults }: BisectionMethodProps) {
       let xr = 0;
       let error = 0;
 
-      const fa = evaluateFunction(equation, a);
-      const fb = evaluateFunction(equation, b);
+      const fa = evaluateFunction(trimmedEquation, a);
+      const fb = evaluateFunction(trimmedEquation, b);
 
       if (fa === 0) {
         onResults([{
@@ -86,7 +98,7 @@ export function BisectionMethod({ onResults }: BisectionMethodProps) {
           fx2: fb,
           fxr: fa,
           error: 0
-        }], a, performance.now() - startTime, equation);
+        }], a, performance.now() - startTime, trimmedEquation);
         setComputing(false);
         return;
       }
@@ -101,7 +113,7 @@ export function BisectionMethod({ onResults }: BisectionMethodProps) {
           fx2: fb,
           fxr: fb,
           error: 0
-        }], b, performance.now() - startTime, equation);
+        }], b, performance.now() - startTime, trimmedEquation);
         setComputing(false);
         return;
       }
@@ -113,9 +125,9 @@ export function BisectionMethod({ onResults }: BisectionMethodProps) {
       do {
         iteration++;
         xr = (a + b) / 2;
-        const fxr = evaluateFunction(equation, xr);
-        const fx1 = evaluateFunction(equation, a);
-        const fx2 = evaluateFunction(equation, b);
+        const fxr = evaluateFunction(trimmedEquation, xr);
+        const fx1 = evaluateFunction(trimmedEquation, a);
+        const fx2 = evaluateFunction(trimmedEquation, b);
 
         error = Math.abs(fxr);
 
@@ -148,7 +160,7 @@ export function BisectionMethod({ onResults }: BisectionMethodProps) {
       const endTime = performance.now();
       const executionTime = endTime - startTime;
 
-      onResults(results, xr, executionTime, equation);
+      onResults(results, xr, executionTime, trimmedEquation);
       setComputing(false);
     } catch (err: any) {
       setError(err.message || 'Terjadi kesalahan dalam perhitungan');
@@ -173,8 +185,9 @@ export function BisectionMethod({ onResults }: BisectionMethodProps) {
         <TextField
           label="Persamaan f(x)"
           value={equation}
-          onChange={(e) => setEquation(e.target.value)}
+          onChange={(e) => handleInputChange(setEquation, e.target.value)}
           fullWidth
+          placeholder="x^3 + x^2 - 3*x - 3"
           helperText="Contoh: x^3 + x^2 - 3*x - 3"
           variant="outlined"
         />
@@ -183,15 +196,17 @@ export function BisectionMethod({ onResults }: BisectionMethodProps) {
           <TextField
             label="x1 (Batas Bawah)"
             value={x1}
-            onChange={(e) => setX1(e.target.value)}
+            onChange={(e) => handleInputChange(setX1, e.target.value)}
             type="number"
+            placeholder="1"
             variant="outlined"
           />
           <TextField
             label="x2 (Batas Atas)"
             value={x2}
-            onChange={(e) => setX2(e.target.value)}
+            onChange={(e) => handleInputChange(setX2, e.target.value)}
             type="number"
+            placeholder="2"
             variant="outlined"
           />
         </Box>
@@ -199,8 +214,9 @@ export function BisectionMethod({ onResults }: BisectionMethodProps) {
         <TextField
           label="Toleransi (epsilon)"
           value={tolerance}
-          onChange={(e) => setTolerance(e.target.value)}
+          onChange={(e) => handleInputChange(setTolerance, e.target.value)}
           type="number"
+          placeholder="0.001"
           inputProps={{ step: 0.001 }}
           variant="outlined"
           helperText="Nilai kesalahan yang dapat diterima"
