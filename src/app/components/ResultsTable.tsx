@@ -51,7 +51,7 @@ export function ResultsTable({
 
   const formatTime = (ms: number) => {
     if (ms < 1) {
-      return `${(ms * 1000).toFixed(2)} us`;
+      return `${(ms * 1000).toFixed(2)} μs`;
     } else if (ms < 1000) {
       return `${ms.toFixed(3)} ms`;
     } else {
